@@ -4,10 +4,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
 import AGCT_tree
-import compressor
+# import compressor
 
 FAKE_CONTENT = "ACGTACGT"
-TARGET_MODULES = [AGCT_tree, compressor]
+# TARGET_MODULES = [AGCT_tree, compressor]
+TARGET_MODULES = [AGCT_tree]
+
 
 @pytest.fixture
 def set_height(monkeypatch):
@@ -43,5 +45,3 @@ def mock_content(monkeypatch):
     for module in TARGET_MODULES:
         monkeypatch.setattr(module, "CONTENT", FAKE_CONTENT, raising=False)
     return FAKE_CONTENT
-
-

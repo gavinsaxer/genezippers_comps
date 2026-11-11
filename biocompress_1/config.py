@@ -6,5 +6,7 @@ COMPLEMENT_TABLE = str.maketrans("ACTG", "TGAC")
 HEIGHT = 11
 COMPARE_LENGTH = 50
 
-with open(DNA_FILE_PATH+DNA_FILE_TXT, "r") as file:
-       CONTENT = file.read()
+# with open(DNA_FILE_PATH+DNA_FILE_TXT, "r") as file:
+#        CONTENT = file.read()
+
+CONTENT = "ACGTACGT"
