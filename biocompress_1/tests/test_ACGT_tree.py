@@ -61,7 +61,6 @@ def test_create_positions_empty_string(fresh_tree):
     check_no_positions(tree)
 
 
-
 def test_find_factor(fresh_tree):
     tree = fresh_tree(3)
     segments = [("ACG", 0), ("CGT", 1), ("GTA", 2)]
@@ -121,3 +120,45 @@ def test_boundary_conditions(fresh_tree):
     
     node = tree.a_branch.c_branch.g_branch
     assert position in node.positions
+
+
+def test_maximum_tree_height(fresh_tree):
+    # Assuming a reasonable maximum height for testing purposes
+    max_height = 10
+    tree = fresh_tree(max_height)
+    segment = "A" * max_height
+    position = 15
+    tree.create_positions(segment, position)
+    
+    node = tree
+    for _ in range(max_height):
+        node = node.a_branch
+    assert position in node.positions
+
+
+def test_single_character_tree(fresh_tree):
+    tree = fresh_tree(4)
+    segment = "CCCC"
+    position = 20
+    tree.create_positions(segment, position)
+    
+    node = tree.c_branch.c_branch.c_branch.c_branch
+    assert position in node.positions
+
+
+def test_empty_tree_find_factor(fresh_tree):
+    tree = fresh_tree(0)
+    result = AGCT_tree.find_factor("A", tree)
+    assert result[0] is None
+    assert result[1] is None
+
+
+def test_boundary_sequence(fresh_tree):
+    tree = fresh_tree(3)
+    segment = "ACG"
+    position = 25
+    tree.create_positions(segment, position)
+    
+    result = AGCT_tree.find_factor("ACG", tree)
+    assert result[0] == [25]
+    assert result[1] == 3
