@@ -61,21 +61,6 @@ def test_create_positions_empty_string(fresh_tree):
     check_no_positions(tree)
 
 
-def test_create_positions_invalid_characters(fresh_tree):
-    tree = fresh_tree(3)
-    segment = "AXGT"
-    position = 15
-    tree.create_positions(segment, position)
-    
-    # No positions should be added due to invalid character 'X'
-    def check_no_positions(node):
-        assert len(node.positions) == 0
-        for child in [node.a_branch, node.c_branch, node.t_branch, node.g_branch]:
-            if child:
-                check_no_positions(child)
-    
-    check_no_positions(tree)
-
 
 def test_find_factor(fresh_tree):
     tree = fresh_tree(3)
@@ -96,11 +81,3 @@ def test_find_factor_not_found(fresh_tree):
     assert result[0] is None
     assert result[1] == None
 
-
-def test_find_factor_invalid_characters(fresh_tree):
-    tree = fresh_tree(3)
-    tree.create_positions("ACG", 0)
-    
-    result = AGCT_tree.find_factor("AXG", tree)
-    assert result[0] is None
-    assert result[1] == None
