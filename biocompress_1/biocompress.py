@@ -1,11 +1,18 @@
 from pathlib import Path
-import time, json, subprocess, sys, csv, os
+import time
+import json
+import subprocess
+import sys
+import csv
+import os
+from typing import Dict, Any
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from dnazip.code.bitfile import export_as_binary
 from config import DNA_FILE_PATH, DNA_FILE, HEIGHT, DNA_FILE_TXT
 
 bin_file_path = DNA_FILE_PATH + DNA_FILE + "_" + str(HEIGHT) + ".bin"
-original_file_path = DNA_FILE_PATH+DNA_FILE_TXT
+original_file_path = DNA_FILE_PATH + DNA_FILE_TXT
 open(bin_file_path, "w").close()
 
 FIELD_NAMES = [
@@ -21,19 +28,20 @@ FIELD_NAMES = [
     "encoded_file_size",
 ]
 
-def file_size(file_path):
-
+def file_size(file_path: str) -> float:
+    """Calculate the size of a file in megabytes."""
     return os.path.getsize(file_path) / (2 ** 20)
 
 
-def compression_ratio(orig_file_path, enc_file_path):
-
+def compression_ratio(orig_file_path: str, enc_file_path: str) -> tuple[float, float, float]:
+    """Calculate the compression ratio and file sizes."""
     orig_file_size = file_size(orig_file_path)
     enc_file_size = file_size(enc_file_path)
-
     return round(enc_file_size / orig_file_size, 4), orig_file_size, enc_file_size
 
-def print_metrics(data):
+
+def print_metrics(data: Dict[str, Any]) -> None:
+    """Print metrics to a CSV file."""
     csv_filepath = "./data.csv"
     file_exists = os.path.isfile(csv_filepath)
     with open(csv_filepath, "a", newline="", encoding="utf-8") as f:
@@ -45,10 +53,11 @@ def print_metrics(data):
 
         # Append a new row
         writer.writerow(data)
-    return 0
 
-def calculate_metrics(data):
-    compression_ratio_val, original_file_size, encoded_file_size = compression_ratio(original_file_path,bin_file_path)
+
+def calculate_metrics(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Calculate and update metrics for compression."""
+    compression_ratio_val, original_file_size, encoded_file_size = compression_ratio(original_file_path, bin_file_path)
     space_saving = 1 - compression_ratio_val
     height = HEIGHT
     genome = DNA_FILE
@@ -63,31 +72,34 @@ def calculate_metrics(data):
     })
     return data
 
-def main():
+
+def main() -> None:
+    """Main function to run the compression and decompression pipeline."""
     print("=== Starting pipeline ===")
 
     print("Step 1: Running compress.py")
-    start=time.time()
-    result = subprocess.run(["python3", "compressor.py"], check=True, text=True, stdout=subprocess.PIPE, stderr=None)  
+    start = time.time()
+    result = subprocess.run([
+        "python3", "compressor.py"
+    ], check=True, text=True, stdout=subprocess.PIPE, stderr=None)
     compression_metrics = json.loads(result.stdout)
-    end=time.time()
+    end = time.time()
     print(f"Total Compression Time: {end - start:.2f} seconds")
 
-    with open(DNA_FILE_PATH+DNA_FILE + "_" + str(HEIGHT) + "_encoded.txt", "r") as file:
+    with open(DNA_FILE_PATH + DNA_FILE + "_" + str(HEIGHT) + "_encoded.txt", "r") as file:
         text_file = file.read()
-    export_as_binary(DNA_FILE_PATH + DNA_FILE  + "_" + str(HEIGHT) + ".bin", text_file)
+    export_as_binary(DNA_FILE_PATH + DNA_FILE + "_" + str(HEIGHT) + ".bin", text_file)
 
     print("Step 2: Running decompress.py")
-    start=time.time()
+    start = time.time()
     subprocess.run(["python3", "decompressor.py"], check=True)
-    end=time.time()
+    end = time.time()
     print(f"Total Decompression Time: {end - start:.2f} seconds")
 
     print("=== Pipeline complete ===")
 
     all_metrics = calculate_metrics(compression_metrics)
     print_metrics(all_metrics)
-
 
 
 if __name__ == "__main__":
