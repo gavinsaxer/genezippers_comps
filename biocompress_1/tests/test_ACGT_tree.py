@@ -81,3 +81,43 @@ def test_find_factor_not_found(fresh_tree):
     assert result[0] is None
     assert result[1] == None
 
+
+def test_single_character_repeated(fresh_tree):
+    tree = fresh_tree(3)
+    segment = "AAAA"
+    position = 7
+    tree.create_positions(segment, position)
+    
+    node = tree.a_branch.a_branch.a_branch
+    assert position in node.positions
+
+
+def test_full_tree_depth(fresh_tree):
+    tree = fresh_tree(3)
+    segment = "ACG"
+    position = 8
+    tree.create_positions(segment, position)
+    
+    node = tree.a_branch.c_branch.g_branch
+    assert position in node.positions
+
+
+def test_non_existent_sequence(fresh_tree):
+    tree = fresh_tree(3)
+    segment = "TTT"
+    position = 9
+    tree.create_positions(segment, position)
+    
+    result = AGCT_tree.find_factor("GGG", tree)
+    assert result[0] is None
+    assert result[1] is None
+
+
+def test_boundary_conditions(fresh_tree):
+    tree = fresh_tree(3)
+    segment = "ACG"
+    position = 10
+    tree.create_positions(segment, position)
+    
+    node = tree.a_branch.c_branch.g_branch
+    assert position in node.positions
