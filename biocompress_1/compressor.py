@@ -106,7 +106,7 @@ def write_buffer(buffer: List[Tuple[Union[str, int], str, int]]) -> None:
     else:
         output_file.write(encode_fibonacci(len(buffer)))
     for item in buffer:
-        output_file.write(item[0])
+        output_file.write(str(item[0]))  # Ensure item[0] is converted to str
 
 
 def encode(processed: Tuple[Union[str, int], str, int], buffer: List[Tuple[Union[str, int], str, int]]) -> List[Tuple[Union[str, int], str, int]]:
@@ -124,7 +124,7 @@ def main() -> None:
     """Main function to orchestrate the compression process."""
     length = len(CONTENT)
     position = 0
-    buffer = []
+    buffer: List[Tuple[Union[str, int], str, int]] = []  # Type annotation added
     with tqdm(total=length, desc="Compressing", unit="bytes", file=sys.stderr, leave=True, disable=not sys.stderr.isatty()) as pbar:
         while position < len(CONTENT):
             processed = process(position)
