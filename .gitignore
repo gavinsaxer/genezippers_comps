@@ -27,7 +27,7 @@ dnazip/data/huffman_trees/*
 dnazip/data/variants/*
 dnazip/figures/*
 
-# biocompress_1/data
+biocompress_1/data
 biocompress_1/__pycache__
 
 
