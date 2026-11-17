@@ -17,7 +17,7 @@ import psutil
 from tqdm import tqdm
 
 from AGCT_tree import Node
-from config import COMPLEMENT_TABLE, CONTENT, DNA_FILE, DNA_FILE_PATH, HEIGHT
+from config import COMPLEMENT_TABLE, DNA_FILE, DNA_FILE_PATH, HEIGHT, load_content
 
 
 MatchKind = Literal["factor", "palindrome"]
@@ -127,14 +127,12 @@ class Compressor:
     def _find_prefix(self, i: int, query: str) -> Optional[Node]:
         """Find the deepest previously indexed prefix without allocating slices."""
         node = self.tree
-        last: Optional[Node] = None
         for offset in range(min(self.height, self.length - i)):
             child = node._child_for_base(query[i + offset])
             if child is None or not child.positions:
                 break
-            last = child
             node = child
-        return last
+        return node if node is not self.tree else None
 
     def _index_segment(self, i: int) -> None:
         """Index a token start, matching Node.create_positions retention rules."""
@@ -274,8 +272,9 @@ def main() -> None:
     subsequent node allocation belongs to compressor_time. tree_memory remains
     an initialization-time process RSS snapshot, not a peak-memory measurement.
     """
+    content = load_content()
     start_time = time.perf_counter()
-    compressor = Compressor(CONTENT, HEIGHT)
+    compressor = Compressor(content, HEIGHT)
     tree_created_time = time.perf_counter()
     tree_memory = get_memory_usage()
     output_path = f"{DNA_FILE_PATH}{DNA_FILE}_{HEIGHT}_encoded.txt"
