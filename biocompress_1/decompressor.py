@@ -1,102 +1,116 @@
 from config import DNA_FILE, DNA_FILE_PATH, HEIGHT, COMPLEMENT_TABLE
-from converter import decode_fibonacci, decode_binary
-import math
 from tqdm import tqdm
 
 
-open(DNA_FILE_PATH+ DNA_FILE + "_" + str(HEIGHT) + "_decoded.txt", "w").close()
-output_file = open(DNA_FILE_PATH+DNA_FILE + "_" + str(HEIGHT) + "_decoded.txt", "a", encoding="utf-8")
-with open(DNA_FILE_PATH+DNA_FILE + "_" + str(HEIGHT) + "_encoded.txt", "r") as file:
-    input_file = file.read()
-PAIR_TO_BASE = {"11":"A","10":"C","01":"T","00":"G"}
+PAIR_TO_BASE = ("G", "T", "C", "A")
+COMPLEMENT_BASE = {base: base.translate(COMPLEMENT_TABLE) for base in PAIR_TO_BASE}
 
-#reads chars from i until it hits 11 and returns decoded number
-def parse_number(i): 
-    end = input_file.find("11", i)
-    num = input_file[i : end + 2]
-    return decode_fibonacci(num), len(num)
 
-#reads bits from i, determines whether binary or fibonacci and returns number
-def parse_number_position(i, window):
-    k =  math.ceil(math.log2(window)) #max length of binary number
-    num = input_file[i : i + k]
-    index = num.find("11")
-    if index==-1: #if no 11, then must be binary
-        kind="binary"
-    else: 
-        num+=input_file[i+k] #read in additional bit to account for added bit
-        if num[index+2]=="0":
-            kind="fibonacci"
-            num=num[:index+2] #cut off at 11
+class Decompressor:
+    def __init__(self, bits):
+        self.bits = bits
+        self.position = 0
+        self.output = []
+        self.literal_run = True
+
+    def read_bit(self):
+        if self.position >= len(self.bits):
+            raise ValueError("Unexpected end of encoded input")
+        bit = self.bits[self.position]
+        if bit not in ("0", "1"):
+            raise ValueError(f"Invalid bit at offset {self.position}")
+        self.position += 1
+        return 1 if bit == "1" else 0
+
+    def read_number(self):
+        value = 0
+        current, following = 1, 2
+        previous = 0
+        while True:
+            bit = self.read_bit()
+            if bit and previous:
+                return value
+            if bit:
+                value += current
+            previous = bit
+            current, following = following, current + following
+
+    def read_position(self, window):
+        if window < 2:
+            raise ValueError("Pointer window has no usable position bits")
+        width = (window - 1).bit_length()
+        binary = 0
+        fibonacci = 0
+        current, following = 1, 2
+        previous = 0
+        for offset in range(width):
+            bit = self.read_bit()
+            binary = binary * 2 + bit
+            if bit and previous:
+                marker = self.read_bit()
+                if marker == 0:
+                    return fibonacci
+                for _ in range(width - offset - 1):
+                    binary = binary * 2 + self.read_bit()
+                return binary
+            if bit:
+                fibonacci += current
+            previous = bit
+            current, following = following, current + following
+        return binary
+
+    def read_bases(self, count):
+        if count > (len(self.bits) - self.position) // 2:
+            raise ValueError("Truncated literal run")
+        for _ in range(count):
+            pair = self.read_bit() * 2 + self.read_bit()
+            self.output.append(PAIR_TO_BASE[pair])
+
+    def read_factors(self, count):
+        for _ in range(count):
+            length = self.read_number()
+            complement = self.read_bit() == 1
+            position = self.read_position(len(self.output))
+            if position < 1:
+                raise ValueError("Pointer positions must be positive")
+            source = position - 1
+            if complement:
+                source = len(self.output) - source
+            if not 0 <= source < len(self.output):
+                raise ValueError("Pointer must reference earlier decoded bases")
+            for offset in range(length):
+                base = self.output[source + offset]
+                self.output.append(COMPLEMENT_BASE[base] if complement else base)
+
+    def decode_run(self):
+        count = self.read_number()
+        if self.literal_run:
+            self.read_bases(count)
         else:
-            kind="binary"
+            self.read_factors(count)
+        self.literal_run = not self.literal_run
 
-    if kind=="binary":
-        return decode_binary(num), len(num)
-    else:
-        return decode_fibonacci(num), len(num)+1
-    
-
-#reads in num*2 bits starting at position and converts to bases (returns a list of bases)
-def parse_bases(num, position):
-    chunk = input_file[position : position + 2*num]
-    return [PAIR_TO_BASE[chunk[i:i+2]] for i in range(0, len(chunk), 2)]
+    def decode(self):
+        while self.position < len(self.bits):
+            self.decode_run()
+        return "".join(self.output)
 
 
-#reads in num factors and processes them, returns length kind and position as ints
-def parse_factors(num, position, output_draft):
-    window = len(output_draft)
-    factors = []
-    for i in range(num):
-        factor_length, length = parse_number(position)
-        position+=length
-        factor_kind = input_file[position]
-        position+=1 #only 1 bit for the kind
-        factor_position, length = parse_number_position(position, window)
-        position+=length
-        factor = (factor_length, factor_kind, factor_position-1)
-        factors.append(factor)
-        window+=factor_length #accounts for new factor created, as it hasn't been written to output_draft yet
-    return factors, position
-
-
-#takes in factor lengths and positions and writes correct copying to output_draft
-def decode_factors(factors, output_draft):
-    for factor in factors:
-        if factor[1]=="0": #factor
-            for i in range(factor[0]):
-                output_draft.append(output_draft[factor[2]+i])
-        if factor[1]=="1": #palindrome
-            length = len(output_draft)
-            for i in range(factor[0]):
-                output_draft.append(output_draft[length-factor[2]+i].translate(COMPLEMENT_TABLE)) #relative positioning
-    return output_draft
+def decompress(bits):
+    return Decompressor(bits).decode()
 
 
 def main():
-    output_draft = []
-    kind = "bases"
-    i=0
-    length_input = len(input_file)
-    with tqdm(total=length_input, desc="Decompressing", unit="bytes") as pbar:
-        prev_i = 0
-        while(i<len(input_file)): #alternates between bases and factors
-            num, length = parse_number(i)
-            i+=length
-            if kind == "bases":
-                bases = parse_bases(num, i)
-                i+=num*2
-                kind="factors"
-                output_draft.extend(bases)
-            elif kind == "factors":
-                factors, i = parse_factors(num, i, output_draft)
-                output_draft=decode_factors(factors, output_draft)
-                kind= "bases"
-            pbar.update(i - prev_i)
-            prev_i = i
-        # write list of bases to file as a single string and close the file
-        output_file.write("".join(output_draft))
-        output_file.close()
+    prefix = f"{DNA_FILE_PATH}{DNA_FILE}_{HEIGHT}"
+    with open(prefix + "_encoded.txt", "r", encoding="utf-8") as source:
+        decoder = Decompressor(source.read())
+    with tqdm(total=len(decoder.bits), desc="Decompressing", unit="bits") as pbar:
+        while decoder.position < len(decoder.bits):
+            previous = decoder.position
+            decoder.decode_run()
+            pbar.update(decoder.position - previous)
+    with open(prefix + "_decoded.txt", "w", encoding="utf-8") as output:
+        output.write("".join(decoder.output))
 
 
 if __name__ == "__main__":
