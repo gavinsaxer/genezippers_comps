@@ -1,0 +1,2 @@
+genome_name,tree_height,tree_creation_time_seconds,compression_time_seconds,total_compression_time_seconds,original_file_size_bytes,compressed_file_size_bytes,source_file_size_bytes,encoded_bit_count,compressed_to_original_ratio,dropped_non_acgt_symbols
+E_Coli,11,0.265410800,19.308728100,19.574138900,4641652,1146994,4699673,9175818,0.247109003,0

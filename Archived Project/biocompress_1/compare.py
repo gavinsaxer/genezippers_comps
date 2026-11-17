@@ -1,0 +1,25 @@
+from config import DNA_FILE, DNA_FILE_PATH, COMPARE_LENGTH, HEIGHT
+import sys
+
+with open(DNA_FILE_PATH+DNA_FILE + ".txt", "r") as file:
+    original = file.read()
+with open(DNA_FILE_PATH+DNA_FILE + "_" + str(HEIGHT) + "_decoded.txt", "r") as file:
+    decoded = file.read()
+
+def main():
+    print(DNA_FILE_PATH+DNA_FILE + ".txt")
+    print(DNA_FILE_PATH+DNA_FILE + "_" + str(HEIGHT) + "_decoded.txt")
+    for i in range(len(original)):
+        if decoded[i]!=original[i]:
+            print("NOT MATCHING")
+            print("Location:", i)
+            print("Error:")
+            print(original[i:i+COMPARE_LENGTH])
+            print(decoded[i:i+COMPARE_LENGTH])
+            sys.exit()
+    print("MATCHING")
+            
+        
+
+if __name__ == "__main__":
+    main()
