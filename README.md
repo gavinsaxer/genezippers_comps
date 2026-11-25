@@ -15,7 +15,6 @@ The project is organized into two primary sections to separate the original coll
 
 ---
 
-## System Overview
 
 ## Getting Started
 
